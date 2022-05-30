@@ -1,0 +1,22 @@
+{
+  "name": "fetch-rewards",
+  "version": "1.0.0",
+  "description": "This project solves a coding exercise for fetch rewards",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tshah-95/fetch-rewards.git"
+  },
+  "author": "Tejas Shah",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Tshah-95/fetch-rewards/issues"
+  },
+  "homepage": "https://github.com/Tshah-95/fetch-rewards#readme",
+  "devDependencies": {
+    "serverless-offline": "^8.8.0"
+  }
+}
