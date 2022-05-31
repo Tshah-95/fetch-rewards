@@ -53,13 +53,6 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: Transactions
-        AttributeDefinitions:
-          - AttributeName: partner
-            AttributeType: S
-          - AttributeName: points
-            AttributeType: N
-          - AttributeName: time
-            AttributeType: S
         # creating a composite key in order to ensure uniqueness
         # assumption made that no two transactions for a given parter will occur at the same time
         KeySchema:
@@ -67,6 +60,11 @@ resources:
             KeyType: HASH
           - AttributeName: time
             KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: partner
+            AttributeType: S
+          - AttributeName: time
+            AttributeType: S
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
