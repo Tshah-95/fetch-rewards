@@ -1,18 +1,33 @@
-'use strict';
+'use strict'
+const { DynamoDB } = require("aws-sdk")
+const { buildResponse } = require("./response")
 
-module.exports.hello = async (event) => {
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        message: 'Go Serverless v1.0! Your function executed successfully!',
-        input: event,
-      },
-      null,
-      2
-    ),
-  };
+const db = new DynamoDB()
+const Transactions = process.env.TRANSACTIONS_TABLE_NAME
 
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // return { message: 'Go Serverless v1.0! Your function executed successfully!', event };
-};
+exports.createTransaction = async (event) => {
+    try {
+        const result = await db.scan({ TableName: Transactions }).promise()
+        return buildResponse(200, result, "Result returns current transactions")
+    } catch (e) {
+        return buildResponse(500, event, e.message)
+    }
+}
+
+exports.spendPoints = async (event) => {
+    try {
+        const result = await db.scan({ TableName: Transactions }).promise()
+        return buildResponse(200, result, "Result returns current transactions")
+    } catch (e) {
+        return buildResponse(500, event, e.message)
+    }
+}
+
+exports.getBalances = async (event) => {
+    try {
+        const result = await db.scan({ TableName: Transactions }).promise()
+        return buildResponse(200, result, "Result returns current transactions")
+    } catch (e) {
+        return buildResponse(500, event, e.message)
+    }
+}
