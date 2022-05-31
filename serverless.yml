@@ -2,7 +2,7 @@ service: fetch-rewards
 
 provider:
   name: aws
-  runtime: nodejs12.x
+  runtime: nodejs16.x
   stage: dev
   region: us-east-1
   environment:
