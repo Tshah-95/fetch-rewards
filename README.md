@@ -1,5 +1,6 @@
 # fetch-rewards
 Coding Exercise for Fetch Rewards Backend Software Engineering Role
+https://fetch-hiring.s3.us-east-1.amazonaws.com/points.pdf
 
 This web service was built in Node.js and will be hosted in AWS with Serverless Framework for IAC and Deployment.
 
@@ -13,3 +14,5 @@ Guides for each of these processes can be found here:
 
 In order to deploy the API, simply clone this repository, cd to the base directory, and execute "serverless deploy".
 The console should output important resources alongside endpoint documentation for the API. This should be enough to send requests to that API via Postman.
+
+Disclaimer: I got somewhat carried away with making everything cloud-native and this ended up taking more time than I anticipated. Hence, there is no formal test suite since I would have had to heavily mock DB calls and API Gateway Event inputs into each function.
