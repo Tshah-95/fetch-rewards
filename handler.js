@@ -65,9 +65,14 @@ exports.createTransaction = async (event) => {
     }
 }
 
+// This endpoint spends points (oldest first) that exist in the system under the following conditions:
+// 1.) The request is in a valid format
+// 2.) The request includes a points path parameter
+// 3.) The provided points are above 0 and below the total points in the system
+// If the request does not meet those criteria it will return an appropriate non-200 response
 exports.spendPoints = async (event) => {
     try {
-        const parsedEvent = JSON.parse(event.pathParameters)
+        const parsedEvent = event.pathParameters
 
         // check for points path parameter
         if (!(parsedEvent?.points) || parsedEvent.points <= 0) {
@@ -84,15 +89,17 @@ exports.spendPoints = async (event) => {
 
         for (let transaction of allTransactions) {
             const { partner, points } = transaction
-            const activePoints = balanceMap.get(partner)
+            let activePoints = balanceMap.get(partner)
             // if another transaction by this partner has been used to pay,
             // account for that when processing other transactions by that partner
             if (spendingMap.has(partner)) activePoints -= spendingMap.get(partner)
 
             if (points <= 0 || activePoints <= 0) continue
 
+            // if there are fewer activePoints than points in this transaction, only use up to the active points
             let maxUsablePoints = Math.min(activePoints, points)
 
+            // only use the amount of points required to finish the spend
             let pointsUsed = Math.min(pointsToSpendRemaining, maxUsablePoints)
 
             if (pointsUsed > 0) {
@@ -111,8 +118,27 @@ exports.spendPoints = async (event) => {
 
         if (pointsToSpendRemaining > 0) return buildResponse(422, parsedEvent, "Points provided too large")
 
-        //create array from map, invert points to show as negatives in response
-        const spendingArray = Array.from(spendingMap, ([ partner, points ]) => ({ partner, points: -points }));
+        let spendingArray = []
+
+        //declare time outside of loop so they are all consistent as it's effectively a bulk insert
+        const timeOfTransaction = new Date().toISOString()
+
+        // for each partner who has funds decreased, create a transaction to represent that decrease in funds
+        // also create array to send for response while iterating
+        for (let transaction of spendingMap) {
+            let [ partner, points ] = transaction
+
+            await db.put({
+                TableName: Transactions,
+                Item: {
+                    partner,
+                    points: -points,
+                    time: timeOfTransaction
+                }
+            }).promise()
+
+            spendingArray.push({ partner, points: -points })
+        }
 
         return buildResponse(200, spendingArray, "Points successfuly spent!")
     } catch (e) {
