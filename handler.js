@@ -70,8 +70,8 @@ exports.spendPoints = async (event) => {
         const parsedEvent = JSON.parse(event.pathParameters)
 
         // check for points path parameter
-        if (!(parsedEvent?.points)) {
-            return buildResponse(422, parsedEvent, "Improper Path Parameters Provided")
+        if (!(parsedEvent?.points) || parsedEvent.points <= 0) {
+            return buildResponse(422, parsedEvent, "Improper path parameters provided")
         }
 
         // this value will be decremented until it reaches 0 or is found to be too large
@@ -85,6 +85,9 @@ exports.spendPoints = async (event) => {
         for (let transaction of allTransactions) {
             const { partner, points } = transaction
             const activePoints = balanceMap.get(partner)
+            // if another transaction by this partner has been used to pay,
+            // account for that when processing other transactions by that partner
+            if (spendingMap.has(partner)) activePoints -= spendingMap.get(partner)
 
             if (points <= 0 || activePoints <= 0) continue
 
@@ -99,17 +102,19 @@ exports.spendPoints = async (event) => {
                     let oldVal = spendingMap.get(partner)
                     spendingMap.set(partner, oldVal + pointsUsed)
                 } else spendingMap.set(partner, pointsUsed)
+
+                pointsToSpendRemaining -= pointsUsed
             }
-
-
-
 
             if (pointsToSpendRemaining === 0) break
         }
 
+        if (pointsToSpendRemaining > 0) return buildResponse(422, parsedEvent, "Points provided too large")
 
+        //create array from map, invert points to show as negatives in response
+        const spendingArray = Array.from(spendingMap, ([ partner, points ]) => ({ partner, points: -points }));
 
-        return buildResponse(200, spendingArray, "Points Successfuly Spent!")
+        return buildResponse(200, spendingArray, "Points successfuly spent!")
     } catch (e) {
         return buildResponse(500, event, e.message)
     }
@@ -120,7 +125,7 @@ exports.getBalances = async (event) => {
     try {
         const [ , balanceMap ] = await getTransactionsAndBalances()
 
-        return buildResponse(200, Object.fromEntries(balanceMap), "Successfully Retreived Active Balances!")
+        return buildResponse(200, Object.fromEntries(balanceMap), "Successfully retreived active balances!")
     } catch (e) {
         return buildResponse(500, event, e.message)
     }

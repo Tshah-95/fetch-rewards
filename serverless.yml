@@ -37,7 +37,7 @@ functions:
     handler: handler.spendPoints
     events:
       - httpApi:
-          path: /spend/${points}
+          path: /spend/{points}
           method: post
   getBalances:
     handler: handler.getBalances
