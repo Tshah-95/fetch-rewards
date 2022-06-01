@@ -20,14 +20,25 @@ exports.createTransaction = async (event) => {
         }
 
         // destructure properties since they are confirmed as defined
-        const { partner, points, time } = parsedTransaction
+        const { partner, points, time: rawTime } = parsedTransaction
 
-        // need to add check for time being invalid (poorly formatted or in future)
-        // if transaction with pre-existing partner and time comes through, there will be unintentded functionality
+        // if transaction with pre-existing partner and time comes through, there will be unintended functionality
+
+        // check for time being invalid (poorly formatted or in future)
+        // assumption made that if Date cannot parse the timestamp it is in an invalid format
+        // should account for timezone OOB since ISO strings contain timezone data
+        const time = new Date(rawTime).toISOString()
+
+        // getTime returns the unix epoch in ms
+        const transTime = new Date(rawTime).getTime()
+        const currTime = new Date().getTime()
+        if (transTime > currTime) return buildResponse(422, parsedTransaction, "Cannot create transaction for future time")
+
+        const transactionToInsert = { partner, points, time }
 
         if (points > 0) {
-            await db.put({ TableName: Transactions, Item: { partner, points, time } }).promise()
-            return buildResponse(200, { partner, points, time }, "Transaction successfully posted!")
+            await db.put({ TableName: Transactions, Item: transactionToInsert }).promise()
+            return buildResponse(200, transactionToInsert, "Transaction successfully posted!")
         } else {
             // retreive all transactions for the current partner
             const partnerTransactions = await db.query({
@@ -45,9 +56,9 @@ exports.createTransaction = async (event) => {
             // if the point total is more negative than the balance of the partner, prevent the action
             if (partnerPointTotal + points < 0) return buildResponse(422, parsedTransaction, "Action results in negative balance")
 
-            await db.put({ TableName: Transactions, Item: { partner, points, time } }).promise()
+            await db.put({ TableName: Transactions, Item: transactionToInsert }).promise()
 
-            return buildResponse(200, { partner, points, time }, "Transaction successfully posted!")
+            return buildResponse(200, transactionToInsert, "Transaction successfully posted!")
         }
     } catch (e) {
         return buildResponse(500, event, e.message)
