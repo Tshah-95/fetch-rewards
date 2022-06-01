@@ -2,7 +2,7 @@
 const { DynamoDB } = require("aws-sdk")
 const { buildResponse } = require("./response")
 
-const db = new DynamoDB()
+const db = new DynamoDB.DocumentClient()
 const Transactions = process.env.TRANSACTIONS_TABLE_NAME
 
 // This endpoint creates a transaction that is processed by the backend under the following conditions:
@@ -25,17 +25,14 @@ exports.createTransaction = async (event) => {
         // need to add check for time being invalid (poorly formatted or in future)
 
         if (points > 0) {
-            db.putItem({ TableName: Transactions, Item: { partner, points, time } })
+            await db.put({ TableName: Transactions, Item: { partner, points, time }, Expected: { Exists: false } }).promise()
             return buildResponse(200, { partner, points, time }, "Transaction successfully posted!")
         } else {
             // retreive all transactions for the current partner
             const partnerTransactions = await db.query({
                 TableName: Transactions,
-                ExpressionAttributeValues: {
-                    ":p": { S: partner }
-                },
                 KeyConditionExpression: "partner = :p",
-                ProjectionExpression: 'partner, points, time'
+                ExpressionAttributeValues: { ":p": partner }
             }).promise()
 
             // create an accumulator that starts at 0 and adds the points of each transaction.
@@ -47,7 +44,7 @@ exports.createTransaction = async (event) => {
             // if the point total is more negative than the balance of the partner, prevent the action
             if (partnerPointTotal + points < 0) return buildResponse(422, event, "Action results in negative balance")
 
-            db.putItem({ TableName: Transactions, Item: { partner, points, time } })
+            await db.put({ TableName: Transactions, Item: { partner, points, time }, Expected: { Exists: false } }).promise()
 
             return buildResponse(200, { partner, points, time }, "Transaction successfully posted!")
         }
