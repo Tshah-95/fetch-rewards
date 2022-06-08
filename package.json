@@ -18,5 +18,8 @@
   "homepage": "https://github.com/Tshah-95/fetch-rewards#readme",
   "devDependencies": {
     "serverless-offline": "^8.8.0"
+  },
+  "dependencies": {
+    "axios": "^0.27.2"
   }
 }
